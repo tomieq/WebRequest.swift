@@ -5,40 +5,59 @@ public struct WebRequestConfig {
 }
 
 public enum WebRequest<T: Codable> {
-    case error(HttpError)
+    case failure(HttpError)
     case response(T)
 
-    public static func get(url: String) -> WebRequest<T> {
-        Self.run(url: url, method: "GET")
+    public static func get(url: String, headers: [String: String]? = nil) -> WebRequest<T> {
+        Self.run(url: url, method: "GET", headers: headers)
     }
 
     public static func post(url: String, body: Codable, headers: [String: String]? = nil) -> WebRequest<T> {
-        Self.run(url: url, method: "POST", body: body.data)
+        Self.run(url: url, method: "POST", body: body.data, headers: headers)
     }
 
     public static func put(url: String, body: Codable, headers: [String: String]? = nil) -> WebRequest<T> {
-        Self.run(url: url, method: "PUT", body: body.data)
+        Self.run(url: url, method: "PUT", body: body.data, headers: headers)
     }
 
     public static func delete(url: String, body: Codable, headers: [String: String]? = nil) -> WebRequest<T> {
-        Self.run(url: url, method: "DELETE", body: body.data)
+        Self.run(url: url, method: "DELETE", body: body.data, headers: headers)
     }
 
     private static var defaultHeaders: [String: String] {
         ["Content-Type": "application/json"]
     }
 
+    
     private static func run(url: String, method: String, body: Data? = nil, headers: [String: String]? = nil) -> WebRequest<T> {
-        var responseJson: Data?
-        var responseError: HttpError?
+        
+        let semaphore = DispatchSemaphore(value: 0)
+        var result: WebRequest?
+        let task = run(url: url, method: method, body: body, headers: headers) {
+            result = $0
+            semaphore.signal()
+        }
+        let waitResult = semaphore.wait(timeout: .now() + .seconds(WebRequestConfig.timeout))
+        if case .timedOut = waitResult {
+            print("Request timed out")
+            task?.cancel()
+            return .failure(.timeoutError)
+        }
+        return result ?? .failure(.other)
+    }
+
+    private static func run(url: String,
+                            method: String,
+                            body: Data? = nil,
+                            headers: [String: String]? = nil,
+                            result: @escaping (WebRequest<T>) -> Void) -> URLSessionDataTask? {
 
         print("\(method) \(url)")
-        let semaphore = DispatchSemaphore(value: 0)
         guard let url = URL(string: url) else {
-            return .error(.invalidUrl)
+            result(.failure(.invalidUrl))
+            return nil
         }
         var request = URLRequest(url: url)
-        request.timeoutInterval = 1
         request.httpMethod = method
         request.httpBody = body
         request.allHTTPHeaderFields = {
@@ -49,32 +68,27 @@ public enum WebRequest<T: Codable> {
             return allHeaders
         }()
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
-
             if let error = error as? NSError {
                 let httpError = HttpError.make(from: error.code)
-                responseError = httpError
-                print("error: \(httpError)")
-                semaphore.signal()
+                result(.failure(httpError))
                 return
             }
-            responseJson = data
-            semaphore.signal()
+            guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
+                result(.failure(.other))
+                return
+            }
+            if statusCode >= 200, statusCode < 300 {
+                if let json = data, let response = try? T(json: json) {
+                    result(.response(response))
+                } else {
+                    result(.failure(.unserializablaResponse(data)))
+                }
+            } else {
+                let body = String(data: data ?? Data(), encoding: .utf8)
+                result(.failure(.invalidHttpCode(code: statusCode, body: body)))
+            }
         }
         task.resume()
-
-        let waitResult = semaphore.wait(timeout: .now() + .seconds(WebRequestConfig.timeout))
-        if case .timedOut = waitResult {
-            print("Request timed out")
-            task.cancel()
-            return .error(.timeoutError)
-        }
-        if let error = responseError {
-            return .error(error)
-        }
-        if let json = responseJson, let response = try? T(json: json) {
-            return .response(response)
-        } else {
-            return .error(.unserializablaResponse)
-        }
+        return task
     }
 }

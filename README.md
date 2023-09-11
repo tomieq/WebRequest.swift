@@ -1,9 +1,9 @@
 # WebRequest
 
-WebRequest is Swift library for makink sync web requests. It has generic type so can work woth Codable structs/classes.
+WebRequest is Swift library for makink sync and async web requests. It has generic type so can work woth Codable structs/classes.
 
 ```swift
-struct SampleDto {
+struct SampleDto: Codable {
     let id: Int
     let title: String
     let body: String

@@ -9,7 +9,7 @@ import Foundation
 
 public enum HttpError: Error, Equatable {
     case invalidUrl
-    case unserializablaResponse
+    case unserializablaResponse(Data?)
     case noInternet
     case timeoutError
     case serverIsDown
