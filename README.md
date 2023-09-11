@@ -8,7 +8,13 @@ struct SampleDto: Codable {
     let title: String
     let body: String
 }
+// sync call
 let response: WebRequest<SampleDto> = .get(url: "https://jsonplaceholder.typicode.com/todos/1")
+
+// async call
+WebRequest<SampleDto>.get(url: "https://jsonplaceholder.typicode.com/todos/1") { result in
+
+}
 ```
 
 Default timeout is 3 seconds, but you can override it with `WebRequestConfig` object:
