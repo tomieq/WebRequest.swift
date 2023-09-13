@@ -21,8 +21,8 @@ public enum WebRequest<T: Codable> {
         Self.run(url: url, method: "PUT", body: body.data, headers: headers)
     }
 
-    public static func delete(url: String, body: Codable, headers: [String: String]? = nil) -> WebRequest<T> {
-        Self.run(url: url, method: "DELETE", body: body.data, headers: headers)
+    public static func delete(url: String, body: Codable? = nil, headers: [String: String]? = nil) -> WebRequest<T> {
+        Self.run(url: url, method: "DELETE", body: body?.data, headers: headers)
     }
 
     // MARK: async functions
@@ -39,8 +39,8 @@ public enum WebRequest<T: Codable> {
         _ = Self.run(url: url, method: "PUT", body: body.data, headers: headers, callback: callback)
     }
 
-    public static func delete(url: String, body: Codable, headers: [String: String]? = nil, callback: @escaping (WebRequest<T>) -> Void) {
-        _ = Self.run(url: url, method: "DELETE", body: body.data, headers: headers, callback: callback)
+    public static func delete(url: String, body: Codable? = nil, headers: [String: String]? = nil, callback: @escaping (WebRequest<T>) -> Void) {
+        _ = Self.run(url: url, method: "DELETE", body: body?.data, headers: headers, callback: callback)
     }
 
     private static var defaultHeaders: [String: String] {
