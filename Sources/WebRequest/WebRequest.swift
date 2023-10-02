@@ -25,8 +25,20 @@ public enum WebRequest<T: Codable> {
         Self.run(url: url, method: "DELETE", body: body?.data, headers: headers)
     }
 
-    // MARK: async functions
+    // MARK: sync functions with raw body
+    public static func post(url: String, body: Data, headers: [String: String]? = nil) -> WebRequest<T> {
+        Self.run(url: url, method: "POST", body: body, headers: headers)
+    }
 
+    public static func put(url: String, body: Data, headers: [String: String]? = nil) -> WebRequest<T> {
+        Self.run(url: url, method: "PUT", body: body, headers: headers)
+    }
+
+    public static func delete(url: String, body: Data? = nil, headers: [String: String]? = nil) -> WebRequest<T> {
+        Self.run(url: url, method: "DELETE", body: body, headers: headers)
+    }
+
+    // MARK: async functions
     public static func get(url: String, headers: [String: String]? = nil, callback: @escaping (WebRequest<T>) -> Void) {
         _ = Self.run(url: url, method: "GET", headers: headers, callback: callback)
     }
@@ -42,7 +54,21 @@ public enum WebRequest<T: Codable> {
     public static func delete(url: String, body: Codable? = nil, headers: [String: String]? = nil, callback: @escaping (WebRequest<T>) -> Void) {
         _ = Self.run(url: url, method: "DELETE", body: body?.data, headers: headers, callback: callback)
     }
+    
+    // MARK: async functions with raw body
+    public static func post(url: String, body: Data, headers: [String: String]? = nil, callback: @escaping (WebRequest<T>) -> Void) {
+        _ = Self.run(url: url, method: "POST", body: body, headers: headers, callback: callback)
+    }
 
+    public static func put(url: String, body: Data, headers: [String: String]? = nil, callback: @escaping (WebRequest<T>) -> Void) {
+        _ = Self.run(url: url, method: "PUT", body: body, headers: headers, callback: callback)
+    }
+
+    public static func delete(url: String, body: Data? = nil, headers: [String: String]? = nil, callback: @escaping (WebRequest<T>) -> Void) {
+        _ = Self.run(url: url, method: "DELETE", body: body, headers: headers, callback: callback)
+    }
+
+    // MARK: implementation
     private static var defaultHeaders: [String: String] {
         ["Content-Type": "application/json"]
     }
